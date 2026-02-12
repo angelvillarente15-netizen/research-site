@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Research Journal Publisher</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
+<style>
+body {
+    font-family: Georgia, "Times New Roman", serif;
+    background-color: #eef1f5;
+    margin: 0;
+}
+
+header {
+    background: #1a2a44;
+    color: white;
+    padding: 20px;
+    text-align: center;
+    font-size: 22px;
+    letter-spacing: 1px;
+}
+
+.upload-section {
+    text-align: center;
+    padding: 30px;
+    background: white;
+}
+
+input[type="file"] {
+    padding: 8px;
+}
+
+.journal-container {
+    width: 80%;
+    margin: 40px auto;
+    background: white;
+    padding: 60px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+    display: none;
+}
+
+.journal-title {
+    text-align: center;
+    font-size: 30px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+.abstract-box {
+    border: 1px solid #ccc;
+    padding: 20px;
+    margin: 30px 0;
+    background: #f9f9f9;
+}
+
+.two-column {
+    column-count: 2;
+    column-gap: 40px;
+    text-align: justify;
+    line-height: 1.8;
+    font-size: 15px;
+}
+
+footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 14px;
+    color: #555;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    International Journal of Academic Research
+</header>
+
+<div class="upload-section">
+    <h2>Upload Your Research PDF</h2>
+    <input type="file" id="pdf-upload" accept="application/pdf">
+</div>
+
+<div class="journal-container" id="journal">
+    <h1 class="journal-title" id="title"></h1>
+
+    <div class="abstract-box">
+        <h3>Abstract</h3>
+        <p id="abstract"></p>
+    </div>
+
+    <div class="two-column" id="content"></div>
+</div>
+
+<footer>
+    © 2026 Academic Publishing Platform
+</footer>
+
+<script>
+const input = document.getElementById('pdf-upload');
+const journal = document.getElementById('journal');
+const titleElement = document.getElementById('title');
+const abstractElement = document.getElementById('abstract');
+const contentElement = document.getElementById('content');
+
+input.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+
+    reader.onload = function() {
+        const typedarray = new Uint8Array(this.result);
+
+        pdfjsLib.getDocument(typedarray).promise.then(function(pdf) {
+            let pages = [];
+
+            for (let i = 1; i <= pdf.numPages; i++) {
+                pages.push(
+                    pdf.getPage(i).then(function(page) {
+                        return page.getTextContent().then(function(text) {
+                            return text.items.map(item => item.str).join(" ");
+                        });
+                    })
+                );
+            }
+
+            Promise.all(pages).then(function(texts) {
+                formatResearch(texts.join("\n"));
+            });
+        });
+    };
+
+    reader.readAsArrayBuffer(file);
+});
+
+function formatResearch(text) {
+    const lines = text.split("\n");
+
+    let title = lines[0];
+    let abstract = "";
+    let body = "";
+    let isAbstract = false;
+
+    lines.forEach(line => {
+        if (line.toUpperCase().includes("ABSTRACT")) {
+            isAbstract = true;
+            return;
+        }
+
+        if (isAbstract && abstract.length < 1200) {
+            abstract += line + " ";
+        } else {
+            body += line + "\n\n";
+        }
+    });
+
+    titleElement.textContent = title;
+    abstractElement.textContent = abstract;
+    contentElement.innerHTML = body.replace(/\n/g, "<br>");
+
+    journal.style.display = "block";
+}
+</script>
+
+</body>
+</html>
